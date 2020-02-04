@@ -1,3 +1,7 @@
+[![Travis-CI Build
+Status](https://api.travis-ci.org/PolMine/MigParl.svg?branch=master)](https://travis-ci.org/PolMine/MigParl)
+
+
 # MigParl
 
 ## A Corpus of Parliamentary Debates on Migration and Integration Affairs in Germany's Parliaments
