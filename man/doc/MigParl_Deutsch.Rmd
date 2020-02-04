@@ -1,0 +1,340 @@
+---
+title: "MigParl (v1.0.1-rc)"
+subtitle: "Korpusdokumentation"
+author: "Andreas Blaette (andreas.blaette@uni-due.de), Christoph Leonhardt (christoph.leonhardt@uni-due.de)"
+date: "`r Sys.Date()`"
+output: pdf_document
+fontsize: 12pt
+vignette: >
+  %\VignetteIndexEntry{MigParl}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+bibliography: migparlvignette.bib
+---
+
+```{r, echo = FALSE, message = FALSE}
+Sys.setenv("CORPUS_REGISTRY" = "")
+```
+
+### Kurzdarstellung.
+
+Dieser Artikel stellt das MigParl-Korpus vor. Es werden die verfügbaren Daten, der Datenaufbereitungsprozess zur Erstellung von Korpora bestehend aus Parlamentsdebatten sowie die Samplingstrategie zur Gewinnung eines thematisch kohärenten Korpus von Debatten zum Thema Migration und Integration beschrieben. 
+
+### Ein Korpus von Plenarprotokollen
+
+MigParl ist ein Korpus von Plenardebatten in den deutschen Bundesländern, die sich mit Themen der Migration und Integration befassen. Es knüpft an das [GermaParl-Korpus](https://github.com/PolMine/GermaParl) an, ein Korpus von Plenarprotokollen des deutschen Bundestages, der ebenso wie MigParl im [PolMine-Projekt](www.polmine.de) entwickelt wurde. Als solches folgt es der Motivation und dem allgemeinen Verwendungszweck von GermaParl [siehe @BLÄTTE18.1024: 810]. Da die Anwendungsfälle und Anforderungen eines Korpus von Plenarprotokollen in @BLÄTTE18.1024 ausführlich beschrieben sind, liegt der Schwerpunkt dieses Papiers auf der Beschreibung der Besonderheiten von MigParl selbst.
+
+Das MigParl-Korpus ist ein bearbeitetes thematisches Subset der Plenarprotokolle, die von den deutschen Bundesländern von (meist) Januar 2000 bis Dezember 2018 veröffentlicht wurden. Während 15 der 16 Bundesländer Daten für etwa diesen Zeitraum zur Verfügung stellen, gibt es im Saarland keine Protokolle für den Zeitraum vor September 2004. Als thematisch spezialisiertes Korpus enthält es nicht alle Debatten, sondern nur die für die Migrations- und Integrationsforschung relevanten Beiträge. Zur verwendeten Stichprobenstrategie siehe Abschnitt "Sampling-Strategie".
+
+MigParl wird als R-Datenpaket mit dem Namen "MigParl" zur Verfügung gestellt. Das Paket enthält die Funktionalität, eine sprachlich annotierte, indizierte und konsolidierte Version des Korpus herunterzuladen, die in die [Corpus Workbench (CWB)] (http://cwb.sourceforge.net) importiert wurde. 
+
+Zusammen mit dem Paket wird ein kleines Beispielkorpus ("MigParlMini") zur Verfügung gestellt. MigParlMini ist wie MigParl annotiert und indiziert, enthält aber nur etwa 1% der Daten, die das Vollkorpus liefert.
+
+Das R-Datenpaket ist so konzipiert, dass es reibungslos mit den analytischen Werkzeugen des R-Pakets `polmineR` zusammenarbeitet.
+
+Die Versionierung des Korpus erfolgt über ein Build-Datum in der Korpusregistrierungsdatei. 
+
+Die meisten Daten wurden aus den von den Landesparlamenten herausgegebenen PDF-Dokumenten erstellt. Diese PDF-Dokumente wurden dann mit `trickypdf`, einem R-Paket, das im Rahmen des PolMine-Projekts entwickelt wurde und auf GitHub frei verfügbar ist, in reine Textdateien umgewandelt. \footnote{https://github.com/PolMine/trickypdf). Der Workflow der Korpusaufbereitung wird im Folgenden beschrieben.
+
+
+### Korpusvorbereitung.
+
+Die Erstellung der TEI-Version von MigParl setzt den folgenden Workflow um:
+
+- __Vorbereitung__: Vorbereitung von konsolidierten UTF-8-Klartext-Dokumenten (Sicherstellung der Einheitlichkeit der Kodierungen, ggf. Konvertierung von PDF nach txt);
+
+- __XMLifizierung__: Umwandlung der Klartextdokumente in das TEI-Format: Extraktion von Metadaten, Annotation der Sprecher etc;
+
+- __Konsolidierung__: Konsolidierung der Sprechernamen und Anreicherung der Dokumente.
+
+Da sich dieser Abschnitt stark mit der Aufbereitung von GermaParl überschneidet, wird nochmals auf @BLÄTTE18.1024 verwiesen. Die Herausforderungen bleiben die gleichen, ebenso wie die Motivation und der Anspruch, ein robustes und nachhaltiges Framework für die Korpusvorbereitung zu schaffen. Dennoch sind einige Aktualisierungen notwendig.
+
+Das R-Paket `trickypdf` ist, wie oben erwähnt, immer noch im Einsatz, um PDF-Dokumente, die fast ausschließlich in einem zweispaltigen Layout vorliegen, in reine Textdateien zu verwandeln. Als Ausnahme stellte Hessen für die Zeit bis 2002 Microsoft Word anstelle von PDF-Dokumenten zur Verfügung. Diese Dokumente wurden ebenfalls in reinen Text umgewandelt.
+
+Die Konvertierung von Klartextdateien in strukturell annotierte XML-Dokumente wird durch das im PolMine-Projekt entwickelte `Framework zum Parsen von Plenarprotokollen` oder `frappp` ermöglicht. `frappp` wird verwendet, um einen Arbeitsablauf zu erleichtern, in dem reguläre Ausdrücke für eine Reihe von Elementen formuliert werden, die identifiziert werden sollen, insbesondere Metadaten, Redner, Zwischenrufe und Tagesordnungspunkte. Wie beim bisherigen Ansatz unter Verwendung des Corpus-Toolkits (`ctk`) werden falsch positive und falsch negative Ausdrücke sowohl durch eine Liste bekannter Fehlanpassungen als auch durch Vorverarbeitungsschritte behandelt, die einige fehlerhafte Eingabedaten bereinigen.
+
+Es wird besondere Sorgfalt darauf verwendet, dass die identifizierten Sprecher konsistent benannt werden. Dies geschieht durch Bezugnahme auf externe Datenquellen von Namen, die durch eine Liste bekannter Aliasnamen ergänzt werden. Die primäre externe Datenquelle, die für die MigParl-Daten verwendet wird, ist Wikipedia [@BLÄTTE18.1024: 813]. 
+
+Eine verbleibende Herausforderung ist die zeitliche Abhängigkeit dieser externen Prüfungen. Mitunter können sich die Informationen im Protokoll und die Informationen in den externen Daten unterscheiden. Ein Abgeordneter kann innerhalb einer Legislaturperiode die Partei wechseln. In diesem Fall wird unser Ansatz die Parteizugehörigkeit dieses Mitglieds mit der in der externen Datenquelle gefundenen kennzeichnen. Dasselbe gilt für Namen. Steht im Protokoll "Ulla Schmidt" und in der externen Datenquelle "Ursula Schmidt", dann wird die externe Information verwendet.
+
+Diese externen Daten werden in einem Git-Repository gespeichert.
+
+
+### Sampling-Strategie
+
+MigParl ist eine thematisches Subset von Plenarprotokollen, die für die Migrations- und Integrationsforschung relevant sind. Aus diesem Grund war eine Stichprobenstrategie notwendig, um diese Relevanz aus einer Grundgesamtheit aller Protokolle des deutschen Bundeslandes zu ermitteln. Wir verfolgen hier einen zweigleisigen Ansatz.
+
+#### Topic Modelling-Ansatz
+
+  * *Topic Modelling*: Für jeden der Landesparlamentskorpora wurde ein eigenes Topic Model berechnet und die 100 relevantesten Begriffe pro Topic ermittelt
+  * *Diktionäransatz*: Eine Reihe von Kernbegriffen, die das Konzept der Migration und Integration vermitteln, wurden durch Literaturrecherche theoretisch abgeleitet
+  * *Themenidentifikation*: Das Wörterbuch und die 100 relevantesten Begriffe pro Topic wurden gegeneinander abgeglichen. Ein Thema mit mehr als fünf Treffern aus dem Wörterbuch wurde als relevant für Migration und Integration eingestuft
+  * *Dokumentenidentifikation*: Für jede Rede wurde die Wahrscheinlichkeit berechnet, zu einem der identifizierten Topics zu gehören. Wenn die summierte Wahrscheinlichkeit einen Schwellenwert überschritt, wurde die Rede als relevant betrachtet
+  * Die entsprechenden Reden gehen in das `MigParl` Korpus ein
+  
+#### Diktionärsansatz
+
+   * das MigPress-Diktionär wurde genutzt, um Reden zu identifizieren, in denen mindestens fünf Instanzen dieser Suchterme auftreten
+   * dies weicht von dem Schwellenwert von einem Suchterm ab, der für die Erstellung des `MigPress`-Korpus genutzt wurde. Diese Entscheidung wurde aufgrund des unterschiedlichen Sprachgebrauchs in der parlamentarischen Arena und der größeren durchschnittlichen Länge einer Rede verglichen mit einem durchschnittlichen Zeitungsartikels getroffen
+   * Die entsprechenden Reden gehen in das `MigParl` Korpus ein.
+
+### Annotation
+
+#### Linguistische Annotation
+
+Die XML/TEI-Version der ursprünglichen Plenarprotokolle wird durch eine Pipeline von Standardaufgaben des Natural Language Processing (NLP) geführt. Stanford CoreNLP wird für die Tokenisierung, Part-of-Speech- (POS), sowie Named-Entity- (NE) Annotation verwendet. Um Lemmata zum Korpus hinzuzufügen, wird [TreeTagger](http://www.cis.uni-muenchen.de/~schmid/tools/TreeTagger/) verwendet.
+
+Diese linguistische Annotation ist als sogenannte positionale Attribute (p-Attribute) Teil des Korpus. Die folgende Tabelle gibt kurze Erläuterungen zu den p-Attributen im MigParl-Korpus.
+
+
+```{r p_attributes, echo = FALSE, message = FALSE}
+library(polmineR)
+use("MigParl")
+pAttrsList <- list(
+  c("word", "das Wort, wie es in der Rede vorkommt", "word"),
+  c("pos", "der part-of-speech-tag des Wortes nach dem Stuttgart-Tübingen-Tagset", "z.B. ADJA, NN, VVINF"),
+  c("lemma", "die lemmatisierte Form des Wortes", "lemma"),
+  c("ner", "Named Entities", "O, ORGANIZATION, PERSON, LOCATION, MISC")
+
+)
+tab_p <- do.call(rbind, pAttrsList)
+colnames(tab_p) <- c("p-attribute", "description", "values")
+knitr::kable(tab_p, format = "markdown")
+```
+
+\newpage
+
+Im sogenannten Tokenstream sieht die linguistische Annotation folgendermaßen aus:
+
+
+```{r sample_ts, echo = FALSE, message = FALSE}
+sample_ts <- partition("MIGPARL", date = "2005-10-13", speaker = "Simone Huth-Haage") %>%
+  polmineR::decode() %>%
+  .[1:8,c("word", "pos", "lemma", "ner")]
+
+#DT::datatable(sample_ts)
+knitr::kable(sample_ts, format = "pandoc")
+```
+
+
+#### Strukturelle Annotation (Metadaten)
+
+Im XML/TEI-Datenformat werden alle Passagen ununterbrochener Sprache mit Metadaten, so genannten strukturellen Attributen (s-Attributen), versehen. Parlamentarische Reden werden häufig durch Interjektionen unterbrochen - die Information, ob es sich bei einer Äußerung um eine Interjektion oder um eine eigentliche Rede handelt, bleibt im Korpus erhalten. Hierzu gehören u.a. Legislaturperiode, Sitzungsperiode, Datum, Name des Redners und seiner Partei. Die strukturelle Annotation ist die Grundlage für alle Arten von diachronen oder synchronen Vergleichen, die die Benutzer durchführen möchten.
+
+Die folgende Tabelle gibt kurze Erläuterungen zu den s-Attributen, die im MigParl-Korpus vorhanden sind.
+
+
+```{r s-attributes, echo = FALSE, message = FALSE}
+sAttrsList <- list(
+  c("lp", "Legislaturperiode", "3 bis 21 (abhängig vom Regionalstaat)"),
+  c("session", " Session/Protokollnummer", "1 bis 161"), # Es liegt ein Fehler in den Daten in MV vor
+  c("agenda_item", "Tagesordnungspunkt", "Nummer des Tagesordnungspunktes"),
+  c("agenda_item_type", "Art des Tagesordnungspunktes", "Debatte / Fragezeit / Regierungserklärung / ... "),
+  c ("date", " Datum der Sitzung", "YYYY-MM-TT (z.B. '2013-06-28')"),
+  c("calendar_week", "Kalenderwoche abgeleitet vom Datum, nach ISO 8601", "YYYY-Woche (e.g. 2001-01)"),
+  c ("year", "Jahr der Sitzung", "2000 bis 2018"),
+  c ("interjection", "Beitrag ist eine Interjektion", "TRUE/FALSE"),
+  c ("role", "Rolle des Sprechers", "Vorsitz / Abgeordneter / Regierung"),
+  c ("speaker", "Name", "Sprecher-Name"),
+  c ("party", "Partei", "Partei des Sprechers"), 
+  c ("regional_state", "Bundesland, in dem die Debatte geführt wird", "Bundeslandabkürzung"), 
+  c ("speech", "einzelne Rede innerhalb einer Debatte", "Kombination aus Sprechername, Datum und Nummer der Äußerung"), 
+  c("migration_integration\n_probability", " summierte Wahrscheinlichkeit für Migrations- und Integrationsrelevanz", "numerisch zwischen 0 und 1"), 
+  c("url", "die URL der Quelldatei", "url"), 
+  c("src", "der Typ der Quelldatei", "pdf oder doc"),
+  c("source_dict", "Die Rede wurde durch den Diktionärsansatz gesampelt", "TRUE/FALSE"), 
+  c("source_topic_model", "Die Rede wurde durch den Topic Modelling-Ansatz gesampelt", "TRUE/FALSE")
+)
+tab <- do.call(rbind, sAttrsList)
+colnames(tab) <- c("s-Attribute", "Beschreibung", "Mögliche Werte")
+knitr::kable(tab, format = "markdown")
+```
+
+
+### Verwendung des MigParl-Korpus
+
+#### Erste Schritte - MigParl installieren
+
+Das MigParl-Datenpaket, das die CWB-indizierte Version des Korpus enthält, wird in einem privaten CRAN-ähnlichen Paket-Repository auf dem Web-Server des PolMine-Projekts gehostet. Das polmineR-Paket bietet einen komfortablen Installationsmechanismus.
+
+```{r installing_GermaParl, eval = FALSE}
+library(polmineR)
+if ("drat" %in% rownames(available.packages()) == FALSE) install.packages("drat")
+drat::addRepo("polmine") # lowercase necessary in this case
+if ("MigParl" %in% rownames(available.packages()) == FALSE){
+  install.packages("MigParl")
+}
+```
+
+Nach der Installation des MigParl-Pakets enthält das Paket nur eine kleines Subset des MigParl-Korpus. Das Subset dient als Beispieldatensatz und für die Durchführung von Pakettests. Um das Gesamtkorpus herunterzuladen, verwenden Sie die folgende Funktion zum Herunterladen des Gesamtkorpus von einem externen Webspace (derzeit zur Verfügung gestellt von der Universität Duisburg-Essen):
+
+```{r load_germaparl, eval = FALSE}
+library(MigParl)
+migparl_download_corpus()
+```
+
+
+Um zu überprüfen, ob die Installation erfolgreich war, führen Sie die folgenden Befehle aus. Weitere Anweisungen finden Sie in der Dokumentation des Pakets polmineR.
+
+
+```{r check_installation, eval = TRUE}
+library(polmineR)
+use("MigParl") # to activate the corpus in the data package
+corpus() # to see whether the MIGPARL corpus is listed
+if ("MIGPARL" %in% corpus()[["corpus"]]) size("MIGPARL") # corpus size
+```
+
+
+#### Ein sehr kurzes Tutorial
+
+Die CWB indizierte Version von MigParl kann mit der CWB selbst oder mit jedem Tool, das die CWB als Backend nutzt (wie z.B. [CQPweb] (http://cwb.sourceforge.net/cqpweb.php)), verwendet werden. Bei den meisten technischen Entscheidungen während der Korpuserstellung wurde jedoch darauf geachtet, die Verwendung des MigParl-Korpus in Kombination mit dem polmineR-Paket zu optimieren. Bitte konsultieren Sie die Dokumentation des polmineR-Pakets (README, Vignette, Handbuch), um zu erfahren, wie Sie polmineR für die Arbeit mit MigParl nutzen können. Wir können hier nur eine sehr kurze Anleitung für die grundlegenden Befehle anbieten. Beachten Sie, dass wir in den folgenden Beispielen MIGPARLMINI zur Veranschaulichung der Funktionen verwenden, da das vollständige MIGPARL-Korpus erst nach der Komplett-Installation des Korpus zur Verfügung steht.
+
+Zuerst möchten Sie sich vielleicht über die s-Attribute (strukturelle Attribute) und die p-Attribute (positionale Attribute) informieren, die verfügbar sind.
+
+
+```{r sAttributes, eval = TRUE}
+s_attributes("MIGPARLMINI")
+p_attributes("MIGPARLMINI")
+```
+
+Um etwas über die Ausprägungen von s-Attributen zu erfahren, geben Sie den Parameter s_attribute an:
+
+```{r sAttributes_year, eval = TRUE}
+s_attributes("MIGPARLMINI", "date")
+s_attributes("MIGPARLMINI", "party")
+```
+
+Um Schlagwörter und ihre Wortumfelder auszugeben, verwenden Sie die kwic-Methode (Keywords-in-Context):
+
+
+```{r kwic, eval = TRUE}
+K <- kwic("MIGPARLMINI", query = "Integration", left = 3, right = 3)
+if (interactive()){
+  K
+} else {
+  knitr::kable(K@stat[1:10,], format = "pandoc")
+}
+```
+
+
+Die Zählung erfolgt mittels der Count-Methode. Sie können eine oder mehrere Suchanfragen angeben:
+
+```{r count, eval = TRUE}
+count("MIGPARLMINI", query = "Integration")
+count("MIGPARLMINI", query = c("Integration", "Flucht", "Abschiebung"))
+```
+
+
+Um die Streuung einer Abfrage zu erhalten, verwenden Sie die dispersion-Methode.
+
+
+```{r dispersion, eval = TRUE}
+D <- dispersion("MIGPARLMINI", query = "Integration", s_attribute = "year")
+```
+
+
+Visualisieren des Ergebnisses als Balkendiagramm:
+
+
+```{r dispersion_barplot, eval = TRUE}
+barplot(D[["count"]], names.arg = D[["year"]], las = 2)
+```
+
+
+Die Kookkurrenz-Methode liefert Ihnen Wörter, die zusammen mit dem Suchbegriff öfter vorkommen als statistisch erwartet.
+
+```{r cooc, eval = FALSE}
+C <- cooccurrences("MIGPARLMINI", query = "Wir")
+C@stat[1:5]
+dotplot(C)
+```
+
+
+Dies sind einige der Kernfunktionen, die auf den gesamten Korpus angewendet werden. Der wesentliche Punkt der strukturellen Annotation des Korpus (s-Attribute) ist es, die Erstellung von Subkorpora / Partitionen zu erleichtern. So kann jede Methode, die eingeführt wurde, auf eine Partition angewendet werden.
+
+
+```{r count_partition, eval = FALSE}
+year2016 <- partition("MIGPARL", year = 2016)
+count(year2016, query = c("Asyl", "Flucht", "Abschiebung"))
+dispersion(year2016, query = "Flüchtlinge", s_attribute = "regional_state")
+```
+
+
+Schließlich ist zu beachten, dass die Methoden von polmineR auch mit der vom magrittr-Paket angebotenen Pipe-Funktionalität verwendet werden können.
+
+```{r pipe, eval = FALSE}
+cooccurrences("MIGPARLMINI", query = "Europa") %>% 
+  subset(!word %in% c(tm::stopwords("de"), ",", ".")) %>%
+  subset(count_coi >= 3) %>%
+  dotplot()
+```
+
+
+Dies ist nur ein kurzer Einblick in die analytischen Möglichkeiten der Verwendung von MigParl in Kombination mit polmineR. Einer der wichtigsten Aspekte, der hier nicht erläutert werden kann, ist die Möglichkeit, die Syntax des Corpus Query Processors (CQP) zu verwenden, die im CWB-Backend integriert ist. Die as.TermDocumentMatrix Methode kann Datenstrukturen effizient aufbereiten, die für weitergehende analytische Techniken wie z.B. Topic Modelling benötigt werden. Bitte lesen Sie die Vignette des polmineR Pakets, um mehr zu erfahren!
+
+
+##### Einige Vorbehalte
+
+
+Eine Reihe von allgemeinen Anmerkungen soll dabei helfen, mögliche Fallstricke bei der Arbeit mit MigParl zu vermeiden:
+
+* Die Plenarprotokolle berichten akribisch über Zwischenrufe. Um die Integrität der Originaldokumente zu erhalten, werden die Einsprüche im Korpus kommentiert. Durch die Verwendung des s-Attributs 'interjection', das die Werte 'TRUE' oder 'FALSE' annimmt, können Sie Ihre Analyse auf Sprache oder Interjektionen beschränken.
+
+<!-- * In den Plenarprotokollen wird nur die Mitgliedschaft in einer Fraktion angegeben. Informationen über die Parteimitgliedschaft werden aus externen Datenquellen abgeleitet und in das Korpus zurückgeschrieben. Das s-Attribut 'parliamentary_group' bezieht sich auf die Fraktion, 'party' auf die Partei, in der ein Sprecher Mitglied ist. Um zwischen CDU- und CSU-Sprechern zu unterscheiden, ist die Verwendung des s-Attributs 'party' notwendig.  -->
+
+* Anders als bei GermaParl ist eine Unterscheidung zwischen Parteizugehörigkeit und Fraktion in der aktuellen Version von MigParl nicht enthalten. Dies hat hauptsächlich den praktischen Grund, dass es auf regionaler Ebene nicht allzu viele Unterschiede zwischen Partei und Fraktion gibt, da es keine "CDU/CSU"-Fraktion wie im Deutschen Bundestag gibt.
+
+<!-- * Das MigParl-Korpus ist ein Korpus der Debatten und Reden, die tatsächlich im Deutschen Bundestag gehalten wurden. Reden, die nur im gedruckten Protokoll (d.h. im Anhang zu einem Protokoll) enthalten waren, sind noch nicht von der Korpusaufbereitung erfasst.  -->
+
+<!-- Zum gegnwärtigen Zeitpunkt können wir jedoch nicht versichern, dass dies für alle in MigParl enthaltenen Plenarprotokolle der Fall ist. -->
+
+* Für Nutzer\*innen, die bereits mit früheren Versionen des `MigParl` Korpus gearbeitet haben, ist es unter Umständen notwendig, ein Subset zu erstellen, das lediglich die Reden berücksichtigt, die mit dem Topic Modelling-Ansatz gesampelt wurden (source_dict == FALSE).
+
+### Fazit
+
+MigParl, ein thematisches Subset von Debatten der deutschen Bundesländer, liegt als sprachlich annotierte und indizierte Version in Form eines R-Datenpakets vor. Die Datensammlung, die sich über 18 Jahre deutscher Parlamentsdebatten erstreckt, ist vollständig, eine Erweiterung ist kurzfristig nicht geplant. Wie bei GermaParl sollen  jedoch "die Daten offen, versioniert, reproduzierbar, zugänglich und nachhaltig sein, wobei der Schwerpunkt auf der sukzessiven Verbesserung der Datenqualität liegt" [@BLÄTTE18.1024: 816]. Da MigParl in die Fußstapfen früherer Bestrebungen wie GermaParl tritt, indem es die Arbeitsabläufe, Ressourcen und methodischen Überlegungen zusammen mit den Daten öffentlich zugänglich macht, hoffen wir, dass die Daten zur Förderung eines öffentlichen digitalen Archivs der Demokratie beitragen können.
+
+<!-- ### Lizenz -->
+
+<!-- Während die Rohdaten, die von den Bundesländern veröffentlichten Plenarprotokolle, öffentlich zugänglich sind, wird das MigParl-Korpus mit einer CC BY+NC+SA-Lizenz bereitgestellt. Das bedeutet: -->
+
+<!-- __BY__ - Namensnennung - Sie müssen eine entsprechende Quellenangabe vornehmen, einen Link zu der Lizenz angeben und angeben, ob Änderungen vorgenommen wurden. Sie können dies in jeder angemessenen Art und Weise tun, aber nicht in einer Weise, die den Eindruck erweckt, dass der Lizenzgeber Sie oder Ihre Nutzung gutheißt. -->
+
+<!-- __NC__ - NonCommercial - Sie dürfen das Material nicht für kommerzielle Zwecke verwenden. -->
+
+<!-- __SA__ - ShareAlike - Wenn Sie das Material remixen, transformieren oder darauf aufbauen, müssen Sie Ihre Beiträge unter der gleichen Lizenz wie das Original verbreiten. -->
+
+<!--  Weitere Erklärungen finden Sie in der [CC Attribution-NonCommercial-ShareAlike 4.0 Unported Lizenz](https://creativecommons.org/licenses/by-nc-sa/4.0/). -->
+
+
+<!-- ### Zitation -->
+
+<!-- Wenn Sie mit dem MigParl-Paket arbeiten, fügen Sie bitte die folgende Referenz in Ihre Bibliographie ein, um die Sprachressource zu referenzieren: -->
+
+<!-- _Blaette, Andreas_ (2018): GermaParl. Corpus of Plenary Protocols of the German Bundestag. R Data Package (v1.2.0). Available from: https://doi.org/10.5281/zenodo.1312551. -->
+
+
+### Anhang
+
+#### Korpusdaten (nach Jahreszahl)
+
+```{r stat_by_year, eval = TRUE, echo = FALSE, message = FALSE}
+library(data.table)
+
+size("MIGPARL", s_attribute = "year") %>%
+    knitr::kable(format = "pandoc")
+```
+
+
+#### Korpusdaten (nach Bundesland)
+
+
+```{r stat_by_reg, eval = TRUE, echo = FALSE, message = FALSE}
+size("MIGPARL", s_attribute = "regional_state") %>%
+ # DT::datatable() 
+  knitr::kable(format = "pandoc")
+```
+
+
+### Literaturangaben
+

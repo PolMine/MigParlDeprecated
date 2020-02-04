@@ -1,0 +1,48 @@
+##
+## registry entry for corpus MIGPARLMINI
+##
+
+# long descriptive name for the corpus
+NAME "MIGPARLMINI"
+# corpus ID (must be lowercase in registry!)
+ID   migparlmini
+# path to binary data files
+HOME /private/var/folders/1j/rdff2t3s6dn3d3jnfspvq7b00000gn/T/RtmpB0QdP7/indexed_corpora/migparlmini
+# optional info file (displayed by ",info;" command in CQP)
+INFO /private/var/folders/1j/rdff2t3s6dn3d3jnfspvq7b00000gn/T/RtmpB0QdP7/indexed_corpora/migparlmini/.info
+
+# corpus properties provide additional information about the corpus:
+##:: charset = "latin1"
+##:: type = "plpr"
+#========================================================================#
+
+
+##
+## p-attributes (token annotations)
+##
+
+ATTRIBUTE word
+ATTRIBUTE pos
+ATTRIBUTE lemma
+ATTRIBUTE ner
+
+##
+## s-attributes
+##
+
+STRUCTURE id
+STRUCTURE speaker
+STRUCTURE party
+STRUCTURE role
+STRUCTURE lp
+STRUCTURE session
+STRUCTURE date
+STRUCTURE src
+STRUCTURE url
+STRUCTURE regional_state
+STRUCTURE interjection
+STRUCTURE year
+STRUCTURE agenda_item
+STRUCTURE agenda_item_type
+STRUCTURE speech
+STRUCTURE migration_integration_probability

@@ -1,0 +1,131 @@
+---
+title: "02 Encode Speeches and Topic Probabilities"
+author: "Christoph Leonhardt"
+date: "03 November 2019"
+output: html_document
+---
+
+# 2. Annotating speeches with topic probabilities
+
+The following chunks of code will separate an individual corpus into speeches and add the sum of the probability of those topics we identified as relevant as an structural attribute to each speech. We then can create a subcorpus of those speeches with a sum probability greater than a certain threshold.
+
+<!--
+# Depreciated method
+
+~~add the five most relevant topics to each speech as an attribute, subset the speeches of a corpus which are relevant in terms of migration and integration (i.e. whose topic attribute contains one of the identified relevant topic numbers) and decode this sub-corpus in order to re-encode the subset as a MigParl corpus~~ -->
+
+
+## Procedure
+
+```{r 02_libraries, echo = FALSE}
+library(polmineR)
+library(cwbtools)
+library(data.table)
+```
+
+First, the s_attribute **speech** must be encoded into the existing corpus. In a second step, for each speech, the sum of the probabilities of those topics which are relevant for migration and integration research are encoded.
+
+```{r 02_load_topic_numbers, echo = FALSE}
+topics_per_state <- readRDS("./rds/all_state_topics.rds")
+source("migparl_additional_annotation_tools.R")
+```
+
+
+### Load initial corpora
+
+
+```{r 02_load_corpora, echo = FALSE}
+corpora <- c("BB", "BE", "BW", "BY", "HB", "HE", "HH", "MV", "NI", "NW", "RP", "SH", "SL", "SN", "ST", "TH")
+package_to_use <- "PopParl"
+use(package_to_use)
+
+get_corpus_build_date <- function(package, corpus) {
+  firstline <- readLines(paste0(system.file(package = package, "extdata", "cwb", "indexed_corpora", tolower(corpus)), "/info.md"))[1]
+  date <- gsub(".*build (.*?)\\)", "\\1", firstline)
+  date <- as.Date(date)
+  return(date)
+}
+
+corpus_build_dates <- lapply(corpora, 
+       function(corpus) {
+         corpus_build_date <- get_corpus_build_date(package = "PopParl", corpus = corpus)
+         data.frame(corpus = corpus, corpus_build_date, stringsAsFactors = FALSE)
+       }
+)
+
+corpus_build_dates <- do.call("rbind", corpus_build_dates)
+
+DT::datatable(corpus_build_dates, rownames = FALSE)
+```
+
+
+### Encode speeches per corpus
+
+
+```{r 02_encode_speech, echo = FALSE}
+for (corpus in corpora) {
+  if (!corpus %in% corpus()$corpus) PopParl::download_corpus(corpus)
+  if (!"speech" %in% s_attributes(corpus)) migparl_add_s_attribute_speech(corpus, package = package_to_use)
+}
+
+# We have to restart R after that. Otherwise the s_attribute speech will not work properly.
+```
+
+
+## Encode Migration and Integration Probability
+
+Afterwards, we sum up the probability we calculated with the topic model, determining that a speech is indeed about migration and integration in some sense. To determine the relevant topics we used a dictionary approach described earlier.
+
+```{r 02_encode_mig_int_prob, echo = FALSE}
+library(polmineR)
+library(data.table)
+use("PopParl")
+topics_per_state <- readRDS("./rds/all_state_topics.rds")
+source("migparl_additional_annotation_tools.R")
+
+corpora <- c("BB", "BE", "BW", "BY", "HB", "HE", "HH", "MV", "NI", "NW", "RP", "SH", "SL", "SN", "ST", "TH")
+
+package_to_use <- "PopParl"
+
+lda_models <- c(
+  BB = "lda_BB_2019-10-31_250_2019-11-01.rds",
+  BE = "lda_BE_2019-10-31_250_2019-11-01.rds", 
+  BW = "lda_BW_2019-10-31_250_2019-11-01.rds",  
+  BY = "lda_BY_2019-10-31_250_2019-11-01.rds",  
+  HB = "lda_HB_2019-10-31_250_2019-11-01.rds",  
+  HE = "lda_HE_2019-10-31_250_2019-10-31.rds",  
+  HH = "lda_HH_2019-10-31_250_2019-11-01.rds",  
+  MV = "lda_MV_2019-10-31_250_2019-11-01.rds",  
+  NI = "lda_NI_2019-10-31_250_2019-10-31.rds",
+  NW = "lda_NW_2019-10-31_250_2019-10-31.rds",
+  RP = "lda_RP_2019-10-31_250_2019-10-31.rds",
+  SL = "lda_SL_2019-10-31_250_2019-10-31.rds",
+  SH = "lda_SH_2019-10-31_250_2019-11-01.rds",
+  SN = "lda_SN_2019-10-31_250_2019-11-01.rds",
+  ST = "lda_ST_2019-10-31_250_2019-11-01.rds",
+  TH = "lda_TH_2019-10-31_250_2019-10-31.rds"
+)
+
+for (corpus in corpora) {
+  model <- sprintf("%s/%s", system.file(package = "PopParl", "extdata", "supplementary_data", "topicmodels"), lda_models[corpus]) %>% readRDS()
+  topic_numbers <- as.integer(topics_per_state[grepl(corpus, names(topics_per_state))])
+  if (!"migration_integration_probability" %in% s_attributes(corpus)) migparl_encode_mig_prob(corpus = corpus, model = model, package = package_to_use, topic_numbers = topic_numbers)
+  RcppCWB::cqp_reset_registry()
+}
+```
+
+## Example from the Saarland
+
+After resetting the registry, each speech in every corpus does have a migration and integration probability attached to it. 
+
+```{r 02_example_sl, echo = FALSE}
+example_speech_mig_int <- s_attributes("SL", c("speech", "migration_integration_probability"))
+example_speech_mig_int_random <- example_speech_mig_int[sample(1:nrow(example_speech_mig_int), 4),]
+example_speech_mig_int_high <- example_speech_mig_int[sample(which(example_speech_mig_int$migration_integration_probability > 0.3), 1),]
+example_speech_mig_int_currated <- rbind(example_speech_mig_int_random, example_speech_mig_int_high)
+example_speech_mig_int_currated$migration_integration_probability <- round(as.numeric(example_speech_mig_int_currated$migration_integration_probability), 3)
+
+DT::datatable(example_speech_mig_int_currated)
+```
+
+We will use this annotation in the following step to create subsets of relevant speeches from each corpus.

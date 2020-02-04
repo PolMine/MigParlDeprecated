@@ -1,0 +1,165 @@
+---
+title: "Untitled"
+author: "Christoph Leonhardt"
+date: "24 1 2020"
+output: html_document
+---
+
+# 6. Reencode Token Streams to CWB corpus
+
+We take these individual token streams and merge them to create the `MigParl` corpus. We add structural attributes to account for the sampling source of the individual speech (**source_dict** and **source_topic_model**) and the structural attribte **calendar_week** to make it easier to align the structural annotation of `MigParl` with `MigPress`. 
+
+
+```{r 06_load_speech_lists, echo = FALSE}
+library(polmineR)
+library(cwbtools)
+speech_list_topic_modelling <- readRDS("./rds/speech_lists_topic_modelling.rds")
+speech_list_dictionary <- readRDS("./rds/speech_lists_migparl_dict.rds")
+```
+
+
+```{r 06_setup_04, echo = FALSE, message = FALSE}
+corpus_new <- "MigParl"
+
+s_attrs <- c("speaker", "party", "role", "lp", "session", "date", "calendar_week", "url", "src", "regional_state", "interjection", "year", "agenda_item", "agenda_item_type", "speech", "migration_integration_probability", "source_dict", "source_topic_model") 
+
+p_attrs <- c("word", "pos", "lemma", "ner")
+
+registry <- Sys.getenv("CORPUS_REGISTRY")
+if (!file.exists(registry)) stop("environment variable CORPUS_REGISTRY needs to be defined")
+stateparl_registry_file <- file.path(registry, tolower(corpus_new))
+if (file.exists(stateparl_registry_file)) file.remove(stateparl_registry_file)
+
+data_dir <- file.path(dirname(registry), "indexed_corpora")
+if (!file.exists(data_dir)) dir.create(data_dir)
+stateparl_data_dir <- file.path(data_dir, tolower(corpus_new))
+if (!file.exists(stateparl_data_dir)) dir.create(stateparl_data_dir)
+file.remove(list.files(stateparl_data_dir, full.names = TRUE))
+```
+
+
+```{r 06_cwb_encoding, echo = FALSE}
+CD <- CorpusData$new()
+
+# copy all tokenstreams and metadata into one file each -----------------------
+
+corpora <- c("BB", "BE", "BW", "BY", "HB", "HE", "HH", "MV", "NI", "NW", "RP", "SH", "SL", "SN", "ST", "TH")
+
+indir <- "~/lab/tmp/migparl_ts"
+
+
+# cpos von vorn beginnen lassen, richtige Reihenfolge der BL
+
+for (corpus in corpora) {
+  message(sprintf("... reading %s", corpus))
+  tokenstream_path <- sprintf("%s/%s_tokenstream.csv", indir, corpus)
+  s_attributes_path <- sprintf("%s/%s_metadata.csv", indir, corpus)
+
+  if (corpus == "BB") {
+    tokenstream_dt <- data.table::fread(tokenstream_path)
+    s_attribute_dt <- data.table::fread(s_attributes_path)
+  } else {
+    tokenstream_tmp <- data.table::fread(tokenstream_path)
+    tokenstream_tmp[, cpos := cpos + tokenstream_dt[nrow(tokenstream_dt), cpos] + 1]
+    tokenstream_dt <- rbind(tokenstream_dt, tokenstream_tmp)
+    temp_sattr_dt <- data.table::fread(s_attributes_path)
+    temp_sattr_dt[, struc := struc + as.integer(max(s_attribute_dt[,"struc"])) + 1]
+    temp_sattr_dt[, cpos_width := cpos_right - cpos_left]
+    temp_sattr_dt[, cpos_left := cpos_left + s_attribute_dt[nrow(s_attribute_dt), cpos_right] + 1]
+    temp_sattr_dt[, cpos_right := cpos_left + cpos_width]
+    temp_sattr_dt[, cpos_width := NULL]
+    s_attribute_dt <- rbind(s_attribute_dt, temp_sattr_dt)
+  }
+}
+
+CD$tokenstream <- tokenstream_dt
+CD$metadata <- s_attribute_dt
+CD$metadata$lp <- as.character(CD$metadata$lp)
+CD$metadata$session <- as.character(CD$metadata$session)
+CD$metadata$interjection <- as.character(CD$metadata$interjection)
+CD$metadata$year <- as.character(CD$metadata$year)
+CD$metadata$agenda_item <- as.character(CD$metadata$agenda_item)
+CD$metadata$migration_integration_probability <- as.character(CD$metadata$migration_integration_probability)
+
+###
+
+CD$metadata[, calendar_week := strftime(CD$metadata[["date"]], format = "%Y-%V")]
+
+index_overlapping_calender_weeks_last_year <- which(gsub("\\d{4}-(\\d+)-\\d+", "\\1", CD$metadata$date) == "01" & gsub("\\d{4}-(\\d+)", "\\1", CD$metadata$calendar_week) >= 52)
+
+CD$metadata[index_overlapping_calender_weeks_last_year, "calendar_week"] <- paste0(as.integer(gsub("(\\d{4})-\\d{2}", "\\1", CD$metadata$calendar_week[index_overlapping_calender_weeks_last_year])) - 1, "-W", gsub("\\d{4}-(\\d{2})", "\\1", CD$metadata$calendar_week[index_overlapping_calender_weeks_last_year]))
+
+index_overlapping_calender_weeks_next_year <- which(gsub("\\d{4}-(\\d+)-\\d+", "\\1", CD$metadata$date) == "12" & gsub("\\d{4}-(\\d+)", "\\1", CD$metadata$calendar_week) == "01")
+
+CD$metadata[index_overlapping_calender_weeks_next_year, "calendar_week"] <- paste0(as.integer(gsub("(\\d{4})-\\d{2}", "\\1", CD$metadata$calendar_week[index_overlapping_calender_weeks_next_year])) + 1, "-", gsub("\\d{4}-(\\d{2})", "\\1", CD$metadata$calendar_week[index_overlapping_calender_weeks_next_year]))
+
+###
+roleSubs = list(
+  c("Berichterstatter", "berichterstatter"),
+  c("regierender_buergermeister", "government")
+)
+
+message("... replacing roles")
+for (i in 1:length(roleSubs)){
+  if (interactive()) message("... replacement: ", i)
+  CD$metadata[, role := gsub(roleSubs[[i]][1], roleSubs[[i]][2], CD$metadata[["role"]])]
+}
+
+# The literal NA party assignment gets lost along the way
+CD$metadata$party[which(is.na(CD$metadata$party))] <- "NA"
+
+partySubs = list(
+  c("^Grüne\\|fraktionslos$", "GRUENE|fraktionslos")
+)
+
+message("... replacing parties")
+for (i in 1:length(partySubs)){
+  if (interactive()) message("... replacement: ", i)
+  CD$metadata[, party := gsub(partySubs[[i]][1], partySubs[[i]][2], CD$metadata[["party"]])]
+}
+
+
+# in the initial data there are 4 speakers with faulty encodings which cannot be
+# translated into latin1. We can correct that here.
+
+speakerSubs = list(
+  c("^Hakan Ta\\?$", "Hakan Tas"), 
+  c("^Turgut Altu\\?$", "Turgut Altug"),
+  c("^Derya Ça\\?lar$", "Derya Çaglar"), 
+  c("^Maja Lasi\\?$", "Maja Lasic")
+)
+
+message("... replacing speakers")
+for (i in 1:length(speakerSubs)){
+  if (interactive()) message("... replacement: ", i)
+  CD$metadata[, speaker := gsub(speakerSubs[[i]][1], speakerSubs[[i]][2], CD$metadata[["speaker"]])]
+}
+
+
+# harmonize char encoding
+
+  # for (name in colnames(CD$metadata[,sapply(CD$metadata, is.character), with = FALSE])) {
+  #   CD$metadata[[name]] <- iconv(CD$metadata[[name]], from = "latin1", to = "UTF-8")
+  # }
+
+# add s_attributes source_dict and source_topic_model
+
+all_speeches_dictionary <- unname(unlist(speech_list_dictionary))
+all_speeches_topic_models <- unname(unlist(speech_list_topic_modelling))
+
+CD$metadata$source_dict <- ifelse(CD$metadata$speech %in% all_speeches_dictionary, TRUE, FALSE) %>% as.character()
+CD$metadata$source_topic_model <- ifelse(CD$metadata$speech %in% all_speeches_topic_models, TRUE, FALSE) %>% as.character()
+
+message("... start encoding")
+
+CD$encode(
+  registry_dir = registry, data_dir = stateparl_data_dir,
+  corpus = toupper(corpus_new), encoding = "latin1", method = "R",
+  p_attributes = p_attrs, s_attributes = s_attrs,
+  compress = TRUE
+)
+
+message("... save tar.gz")
+tarfile <- sprintf("%s/migparl.tar.gz", indir)
+cwbtools::corpus_as_tarball(corpus=corpus_new, registry_dir = Sys.getenv('CORPUS_REGISTRY'), tarfile = tarfile)
+```

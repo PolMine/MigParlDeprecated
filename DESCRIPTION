@@ -1,0 +1,19 @@
+Package: MigParl
+Type: Package
+Title: A collection of plenary protocols of the German regional states covering speeches regarding migration and integration 
+Version: 0.1.0
+Authors@R: c(
+    person("Andreas", "Blaette", email = "andreas.blaette@uni-due.de", role = "aut"),
+    person("Christoph", "Leonhardt", email = "christoph.leonhardt@uni-due.de", role = c("aut", "cre")))
+Description: A collection of plenary protocols of the German regional states covering speeches regarding migration and integration. Protocols are (linguistically) annotated, imported into the Corpus Workbench and then subset topically following a lda-based topic modelling.
+URL: https://github.com/polmine/MigParl
+BugReports: https://github.com/polmine/MigParl/issues
+Additional_repositories: https://polmine.github.io/drat/
+License: NONE
+Encoding: UTF-8
+LazyData: true
+Imports: 
+    cwbtools,
+    RCurl,
+    rstudioapi
+RoxygenNote: 6.1.1

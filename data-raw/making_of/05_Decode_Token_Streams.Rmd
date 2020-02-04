@@ -1,0 +1,99 @@
+---
+title: "05_Decode_Token_Streams"
+author: "Christoph Leonhardt"
+date: "24 January 2020"
+output: html_document
+---
+
+# 5. Decode token streams from selected speeches
+
+In the previous steps, we determined which topics of our topic model are relevant, we calculated the probability that single speeches belong to these topics, we determined a fitting threshold probability to be considered in the subcorpus and finally identified relevant speeches accordingly. Additionally, we deployed a dictionary-based approach first used in `MigPress` to identify an additional set of speeches. 
+
+Now, these identified speeches have to be extracted from the regional state corpora. Then, they have to be merged and encoded into the `MigParl` corpus. The steps necessary here largely follow the vignette of the `cwbtools` package. 
+
+The output will be the `MigParl` corpus itself as a tarball which can be installed by `cwbtools` and used by `polmineR`.
+
+```{r 05_libraries_04, echo = FALSE, message = FALSE}
+library(polmineR)
+library(cwbtools)
+library(data.table)
+use("PopParl")
+library(pbapply)
+```
+
+```{r 05_load_speech_lists, echo = FALSE}
+speech_list_topic_modelling <- readRDS("./rds/speech_lists_topic_modelling.rds")
+speech_list_dictionary <- readRDS("./rds/speech_lists_migparl_dict.rds")
+```
+
+
+```{r 05_subset_speeches_from_corpora, echo = FALSE, message = FALSE}
+corpora <- c("BB", "BE", "BW", "BY", "HB", "HE", "HH", "MV", "NI", "NW", "RP", "SH", "SL", "SN", "ST", "TH")
+
+list_of_subcorpora <- lapply(corpora, 
+       function(corp) {
+         speeches_regional_state_combined <- unique(c(speech_list_topic_modelling[[corp]], speech_list_dictionary[[corp]]))
+         subcorpus_regional_state <- polmineR::subset(corp, speech = speeches_regional_state_combined)
+       }
+)
+```
+
+
+```{r 05_decode, echo = FALSE, message = FALSE}
+outdir <- "~/lab/tmp/migparl_ts"
+
+starttime <- Sys.time()
+
+# this takes forever (~ 1.5 h?)
+pblapply(list_of_subcorpora, 
+         function(subcorp) {
+           decode_stream <- polmineR::decode(subcorp)
+           corpus <- subcorp@corpus
+           
+           decode_stream[, cpos :=  as.character(as.integer(factor(cpos)) - 1)][, struc :=  as.character(as.integer(factor(struc)) - 1)][, id :=  paste0(corpus, decode_stream$id)]
+           
+           tokenstream_dt <- data.table::copy(decode_stream)
+           metadata_dt <- decode_stream
+           
+           metadata_dt[, c("word", "lemma", "pos", "ner") := NULL]
+           metadata_dt <- metadata_dt[,{list(cpos_left = min(as.integer(.SD[["cpos"]])), cpos_right = max(as.integer(.SD[["cpos"]])), 
+                                             id = unique(.SD[["id"]]),
+                                             speaker = unique(.SD[["speaker"]]),
+                                             party = unique(.SD[["party"]]),
+                                             role = unique(.SD[["role"]]),
+                                             lp = unique(.SD[["lp"]]),
+                                             session = unique(.SD[["session"]]),
+                                             date = unique(.SD[["date"]]),
+                                             url = unique(.SD[["url"]]),
+                                             src = unique(.SD[["src"]]),
+                                             interjection = unique(.SD[["interjection"]]),
+                                             year = unique(.SD[["year"]]),
+                                             agenda_item = unique(.SD[["agenda_item"]]),
+                                             agenda_item_type = unique(.SD[["agenda_item_type"]]),
+                                             speech = unique(.SD[["speech"]]),
+                                             migration_integration_probability = unique(.SD[["migration_integration_probability"]]), 
+                                             regional_state = unique(corpus)
+           )}, by = "struc"]
+           
+           filename <- sprintf("%s/%s_metadata.csv", outdir, corpus)
+           data.table::fwrite(metadata_dt, file = filename)
+           
+           rm(metadata_dt, decode_stream)
+           gc()
+           
+           # tokenstream
+           message("... decoding p_attributes")
+           
+           tokenstream_dt <- tokenstream_dt[, c("word", "pos", "lemma", "ner", "id", "cpos")]
+           filename <- sprintf("%s/%s_tokenstream.csv", outdir, corpus)
+           
+           
+           data.table::fwrite(tokenstream_dt, file = filename)
+           
+           timetime <- Sys.time() - starttime
+           message("... time: ",  timetime)
+         }
+)
+```
+
+Now we have individual token streams and metadata for each regional state. Unfortunately, memory gets scarce pretty fast, which at least slows the process down. That is why we do not try to keep the token streams in the RAM.

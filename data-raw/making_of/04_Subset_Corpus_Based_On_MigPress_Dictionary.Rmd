@@ -1,0 +1,115 @@
+---
+title: "04_Subset_Corpus_Based_On_MigPress_Dictionary"
+author: "Christoph Leonhardt"
+date: "24 January 2020"
+output: html_document
+---
+
+```{r 04_libraries_04, message= FALSE, echo = FALSE}
+library(data.table)
+library(polmineR)
+use("PopParl")
+```
+
+# 4. Creating a list of speeches based on the MigPress dictionary
+
+## Why a second approach?
+
+In the documentation of the `MigPress` corpus of German newspaper articles concerned with migration and integration, a detailed report was given of how the topical relevance of an article was determined. Due to limited access to the data beforehand, a dictionary based approach was used. The same sampling strategy will be deployed on the parliamentary data in addition to the topic modelling based approach previously described. As both approaches do have their merits, we incorporate both sampling strategies in the `MigParl` corpus.
+
+The dictionary-based approach first employed in the creation of the `MigPress` corpus and now transferred to `MigParl` might be considered theoretically more robust as the dictionary creation process starts from theoretical assumptions of what constitutes relevance for migration and integration research and is then expanded upon in a data-driven fashion. However, the process was also informed by a couple of rather specific limits of data access and the volume of the resulting corpus. Hence, a rather narrow definition of migration and integration relevance was chosen in the first place and then the task was to match all the textual manifestations of this definition as closely as possible. In consequence, the dictionary approach might be considered more transparent and its limited width might help to explain what the corpus comprises (and what it does not), while the aforementioned limits make the possibly desirable inclusion of articles addressing related issues not matched by the dictionary itself less feasible.
+
+As we work under the assumption to have access to every available speech held in a German regional state parliament in the period of interest (see data report for further details), another form of data retrieval was chosen, as explained earlier. We deviate from the dictionary chosen in the creation of the `MigPress` corpus when selecting relevant topics because choosing a thematically broader, more issue focussed dictionary allows us to explicitly include topics which potentially are connected to core topics of migration and integration but are ambiguous and hence not covered by the concise dictionary of `MigPress` which is explicitly driven by terms connected to `target populations`. Technically, as we deploy the dictionary used for the topic selection on the 100 most relevant words of each topic, the dictionary used here is more suited for matching topical issue related terms as terms used for the description of target populations potentially cluster together in one topic per regional state. Ultimately, in contrast to the number of articles available for `MigPress` we do not face a hard limit for the number of speeches we can include. That being said, a result of this broader approach is that we might include more non-relevant speeches, i.e. noise into the data which is something researchers working with the data should be aware of. In addition, there are several decisions which influence the sampling process apart from the selection of relevant topics, such as the hyperparameters of the topic modelling process or which threshold to choose. These were explicated earlier.
+
+In consequence, we consider it best to combine both approaches in the creation of `MigParl` and leave it to the researcher of which approach should be chosen, considering the reasoning explained above.
+
+## The MigPress dictionary
+
+We use the dictionary developed and thoroughly explained in the `MigPress` documentation. In a nutshell, this dictionary is derived from the central assumption that the relevance of migration and integration always is connected with addressing a *target population*. Starting from some core terms, the key-term list is then expanded upon in a data-driven fashion.
+
+```{r 04_migpress_dict}
+mig_int_terms <- c("Aufnahmegesellschaft", ".*Migrantin", ".*Migranten", ".*Asyl", ".*Migrant", ".*Flüchtlingen", 
+".*Migrantinnen", ".*Flüchtlinge", ".*Flüchtling", "Migrant.*", "Sinti", "Immigrant.*", 
+"Türkeistämmig.*", "Migrationsgesellschaft", "Imam.*", "Emigrant.*", "Asyl.*", "Biodeutsch.*", 
+"Mehrheitsgesellschaft", "Flüchtling.*", "Moschee.*", "Zugewander.*", "Parallelgesellschaft.*", 
+"Sinto", "Kopftuch.*", "Spätaussiedler.*", "Geflüchtete.*", "Zigeuner", "Romani", "Geduldete.*", 
+"Deutschtürk.*", "Nichtdeutsch.*", "Syrer", "Aussiedler.*", "Moslem.*", "Zuwander.*", "Muslim.*", 
+"Gastarbeiter.*", "Einwander.*", "Roma", "Eingewander.*", "Schutzbedürftig.*", "deutsch-türkisch.*", 
+"Russlanddeutsch.*", "Eingebürger.*", "Rassis.*", "anti-semit.*", "Auswand.*", "Ausländer.*", 
+"Zigeunerin", "Antisemit.*", "Ausgewander.*", "Islam.*", "Ankerzentr.*", "Anti-Asyl.*", 
+"Anti-Flüchtling.*", "Aufnahmeeinrichtung.*", "Balkan-Route", "Bundesvertriebenengesetz", "EU-Asyl.*", 
+"EU-Flüchtling.*", "EU-Türkei-Abkommen", "EU-Zuwander.*", "EURODAC", "Fachkräfteeinwanderung.*", 
+"Kirchenasyl.*", "Niqab", "Roma-.*", "Sea-Watch", "UN-Flüchtling.*", "Vorrangprüfung", ".*Flüchtlingslager", 
+".*Flüchtlingspolitik", "antiflüchtling.*", "BAMF", "Erstaufnahmeeinrichtung.*", "Bleibeperspektive", 
+"unbegleitete", "Transitzonen", "UNHCR", "Aufnahmelager.*", "Aufnahmezentr.*", "Anwerbestopp", 
+"Aufenthaltstitel", "Familiennachz.*", "Aufenthaltsgesetz.*", "Herkunftsstaaten", "Anerkennungsquote",
+"Integrationskurs.*", "Deutsch-Türk.*", "Balkanroute", "Lampedusa", "Integrationsgipfel.*", 
+"FRONTEX", "Integrationsgesetz.*", "Dublin-.*", "Ehegattennachzug.*", "Schutzsuchend.*", 
+"Daueraufenthaltsrecht", "Bleiberecht.*", "Residenzpflicht", "Seenotrettung", "Aufnahmeland", 
+"Integrationsmaßnahme.*", "Aufenthaltsstatus", "Koran.*", "Minarett.*", "Arbeitsmigration", 
+"Auffanglager", "Integrationsdebatte.*", "Aufenthaltsrecht.*", "Altfallregelung", "Umsiedlungsprogramm", 
+"Willkommenskultur.*", "Sammelunterk.*", "Weltflüchtling.*", "Abschiebung.*", "Massenmigration", 
+"Integrationsland", "Mehrstaatigkeit", "Grenzpolitik", "Mehrstaatlichkeit", "Kopftücher.*", 
+"Menschenschmugg.*", "Optionspflicht", "Integrationsplan", "Integrationsbeauftragte.*", "Anerkennungsgesetz", 
+"Schleusung", "Herkunftsländern", "Schleuser.*", "subsidiäre.*", "Deutschkurs", "Heimatvertriebene.*", 
+"Integrationspolitik", "Wiedereinreise.*", "Auslandstürk.*", "Herkunftsländer", "Burka", "Burka-.*", 
+"Einbürgerung.*", "Aufenthaltsgenehmigung", "Integrationsproblem.*", "Multikult.*", "eingereist.*", 
+"Binnenwanderung", "Integrationskonzept.*", "Assimilation", "Grenzschließung.*", "Migration.*", 
+"Abschiebe.*", "Immigration.*", "Burkini.*", "Integrationsbemühungen.*", "Familienzusammenführung", 
+"Deutschkenntnisse", "Transitstaat.*", "Multikulti", "Punktesystem", "Assimilierung", "Integrationsminister.*", 
+"Fremdenfeindlich.*", "Doppelstaat.*", "Ehrenmord.*", "Türkischstämmig.*", "Sprachtest.*", 
+"Integrationsfähigkeit", "Leitkultur", "Sprachkurs.*", "Nikab", "Außengrenze.*", "Anerkennungsverfahren", 
+"Schlepper.*", "Menschenhändler", "Schengen", "Völkerwanderung.*", "Grenzübertritt", "Herkunftsland", 
+"Sprachförderung", "Staatenlos.*", "Personenfreizügigkeit", "Multi-Kulti", "Wohnbevölkerung", 
+"Aufnahmebereitschaft", "Sprachunterricht.*", "Grenzschutz", "Zwangsheirat", "Ausreise.*", 
+"EU-Diskriminierung.*", "Wanderungsbewegung.*", "Grenzschützer.*", "Identitätsfeststellung.*", 
+"Religionsunterricht.*", "Staatsangehörig.*", "Grenzwächter.*", "Staatsbürgerschaft.*", "Einreise", 
+"Grenzkontrolle.*", "Rückführung.*", "Passkontrollen.*", "Doppelpass.*", "Geflohene.*", "Duldung.*", 
+"Deportation.*", "Freizügigkeit", "Nicht-Deutsch.*", "Vertriebene.*", "Desintegration", "Flüchtende.*", 
+"Visum.*", "Personenkontrollen", "Emigration.*", "Ausbürger.*", "Rumänen", "Mitbürger", "Deutschstämmig.*", 
+"Drittstaat.*", "Zugezogene.*", "Zuzug.*", "Aufnahmefähigkeit")
+```
+
+```{r 04_make_terms_cqp, echo = FALSE}
+# make cqp
+mig_int_terms_cqp <- as.cqp(mig_int_terms, normalise.case = TRUE)
+```
+
+
+## Subsetting by term occurrence
+
+In `MigPress` we use a rather soft criteria for article selection: We select an article if at least one of the terms of the dictionary occurs at least once in a given article. In previous tests with plenary data, this low threshold seemed too low as it apparently introduced a lot of false positives. This is not surprising, as the `MigPress` dictionary contains terms which are potentially more frequent and ambiguous in parliamentary speech (for example "Mitbürger" to address (parts of) the audience) and given that the average speech in the corpus is about twice as long as the average newspaper article (in terms of number of tokens). In consequence, it seemed acceptable to increase this threshold to five.
+
+```{r 04_get_speech_list_per_regional_state, echo = FALSE, message = FALSE}
+corpora <- c("BB", "BE", "BW", "BY", "HB", "HE", "HH", "MV", "NI", "NW", "RP", "SH", "SL", "SN", "ST", "TH")
+
+name_hit_speeches_list <- lapply(corpora, 
+       function(corp) {
+         speeches <- polmineR::subset(corp, year >= 2000 & year <= 2018) %>%
+           as.speeches(s_attribute_name = "speaker")
+         dt <- count(speeches, query = mig_int_terms_cqp, cqp = TRUE) %>% setorderv(cols = "TOTAL", order = -1L)
+         speeches_min <- speeches[[ subset(dt, TOTAL >= 5)[["partition"]] ]]
+         name_hit_speeches <- names(speeches_min@objects)
+       }
+)
+
+names(name_hit_speeches_list) <- corpora
+saveRDS(name_hit_speeches_list, "./rds/speech_lists_migparl_dict.rds")
+```
+
+
+Here, a sample speech is printed with highlighted dictionary words. The printing method does not account for the CQP expressions, so it is possible that not all the terms matched are highlighted.
+
+
+```{r 04_print_sample_speech_dict, echo = FALSE, message = FALSE}
+library(polmineR)
+use("PopParl")
+xxx <- subset("BB", speech %in% name_hit_speeches_list[["BB"]]) %>%
+  as.speeches(s_attribute_name = "speaker", gap = 0)
+
+xxx[[1]] %>%
+  as("plpr_subcorpus") %>%
+  html() %>%
+  highlight(lightgreen = mig_int_terms, regex = TRUE, perl = TRUE)
+```
+
