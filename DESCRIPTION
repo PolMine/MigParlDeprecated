@@ -9,7 +9,7 @@ Description: A collection of plenary protocols of the German regional states cov
 URL: https://github.com/polmine/MigParl
 BugReports: https://github.com/polmine/MigParl/issues
 Additional_repositories: https://polmine.github.io/drat/
-License: NONE
+License: CC BY-SA 4.0
 Encoding: UTF-8
 LazyData: true
 Imports: 

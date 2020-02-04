@@ -46,6 +46,9 @@
 <li>
   <a href="reference/index.html">Reference</a>
 </li>
+<li>
+  <a href="news/index.html">Changelog</a>
+</li>
       </ul>
 <ul class="nav navbar-nav navbar-right">
 <li>
@@ -67,23 +70,105 @@
       </header><div class="row">
   <div class="contents col-md-9">
 
-<div id="migparl---data-package" class="section level1">
+
+<div id="migparl" class="section level1">
 <div class="page-header"><h1 class="hasAnchor">
-<a href="#migparl---data-package" class="anchor"></a>MigParl - Data Package</h1></div>
+<a href="#migparl" class="anchor"></a>MigParl</h1></div>
+<div id="a-corpus-of-parliamentary-debates-on-migration-and-integration-affairs-in-germanys-parliaments" class="section level2">
+<h2 class="hasAnchor">
+<a href="#a-corpus-of-parliamentary-debates-on-migration-and-integration-affairs-in-germanys-parliaments" class="anchor"></a>A Corpus of Parliamentary Debates on Migration and Integration Affairs in Germany’s Parliaments</h2>
+<div id="about" class="section level3">
+<h3 class="hasAnchor">
+<a href="#about" class="anchor"></a>About</h3>
+<p>The MigParl corpus, a corpus of parliamentary debates on migration and integration affairs in Germany’s parliaments, has been prepared in the project “MigTex - Language Ressources for Migration and Integration Research”. The funding of Germany’s Federal Ministry for Family Affairs, Senior Citizens, Women and Youth (BMFSFJ) within the context of the establishment of Germany’s Centre for Integration and Migration Research (DeZIM) is gratfully acknowledged.</p>
+<p>This repository has been created to host the website for the MigParl corpus and in order to use GitHub Issues. User feedback is highly welcome. We encourage using this repository’s issues as a feedback and quality control mechanism.</p>
+</div>
+<div id="installing-migparl" class="section level3">
+<h3 class="hasAnchor">
+<a href="#installing-migparl" class="anchor"></a>Installing MigParl</h3>
+<p>The MigParl release is a linguistically annotated corpus that has been indexed using the Corpus Workbench (CWB) and that can be used with the Corpus Query Processor (CQP). It is designed to be used in combination with the polmineR R package, which relies on the CWB/CQP as an efficient backend for large, linguistically and indexed corpora.</p>
+<p>MigParl is shipped as an R data package (unsurprisingly called MigParl) that is available via PolMine’s drat repository. First make sure you have polmineR installed. If necessary, consult the instructions of the README file of the polmineR repository. Then run the following lines of code.</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb1-1" data-line-number="1"><span class="kw"><a href="https://rdrr.io/r/utils/install.packages.html">install.packages</a></span>(<span class="st">"polmineR"</span>)</a>
+<a class="sourceLine" id="cb1-2" data-line-number="2"><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span>(polmineR)</a>
+<a class="sourceLine" id="cb1-3" data-line-number="3"></a>
+<a class="sourceLine" id="cb1-4" data-line-number="4"><span class="kw"><a href="https://rdrr.io/r/utils/install.packages.html">install.packages</a></span>(<span class="st">"drat"</span>) <span class="co"># if necessary</span></a>
+<a class="sourceLine" id="cb1-5" data-line-number="5">drat<span class="op">::</span><span class="kw"><a href="https://rdrr.io/pkg/drat/man/addRepo.html">addRepo</a></span>(<span class="st">"polmine"</span>) <span class="co"># lowercasing "PolMine" necessary here</span></a>
+<a class="sourceLine" id="cb1-6" data-line-number="6"><span class="kw"><a href="https://rdrr.io/r/utils/install.packages.html">install.packages</a></span>(<span class="st">"MigParl"</span>)</a></code></pre></div>
+<p>The MigParl package includes a small sample drawn from the full MigParl corpus (“MIGPARLMINI”). Use the <code><a href="reference/install_migparl.html">migparl_download_corpus()</a></code> function to download the full corpus from the webserver of the PolMine Project.</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb2-1" data-line-number="1"><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span>(MigParl)</a>
+<a class="sourceLine" id="cb2-2" data-line-number="2"><span class="kw"><a href="reference/install_migparl.html">migparl_download_corpus</a></span>()</a>
+<a class="sourceLine" id="cb2-3" data-line-number="3"><span class="kw"><a href="https://rdrr.io/pkg/polmineR/man/use.html">use</a></span>(<span class="st">"MigParl"</span>)</a></code></pre></div>
+</div>
+<div id="migparl---data-package" class="section level3">
+<h3 class="hasAnchor">
+<a href="#migparl---data-package" class="anchor"></a>MigParl - Data Package</h3>
 <p>The MigParl package consists of two main components: 1) A small sample corpus of linguistically annotated, CWB indexed plenary protocols of the German regional states which regard the subject of migration and integration and 2) a method to download the full corpus of thematically subset plenary protocols from about the year 2000 onwards.</p>
 </div>
-<div id="download-and-installation" class="section level1">
-<h1 class="hasAnchor">
-<a href="#download-and-installation" class="anchor"></a>Download and Installation</h1>
+<div id="download-and-installation" class="section level3">
+<h3 class="hasAnchor">
+<a href="#download-and-installation" class="anchor"></a>Download and Installation</h3>
 <p>As the data is in closed beta at the time of writing, the download method for the entire corpus is restricted by password. If you have been provided with a password by the authors of the package, the download will be started via:</p>
 <pre class="{r}"><code><a href="reference/install_migparl.html">migparl_download_corpus()</a></code></pre>
 <p>after which you will be prompted to enter username and password.</p>
 </div>
-<div id="data" class="section level1">
-<h1 class="hasAnchor">
-<a href="#data" class="anchor"></a>Data</h1>
+<div id="data" class="section level3">
+<h3 class="hasAnchor">
+<a href="#data" class="anchor"></a>Data</h3>
 <p>The MigParl data package itself closely follows the structure of the <a href="https://github.com/PolMine/GermaParl">GermaParl corpus</a> which was developed within the <a href="https://polmine.github.io">PolMine</a> project. As such the plenary protocol data was linguistically annotated and imported into the <a href="http://cwb.sourceforge.net">Corpus Workbench (CWB)</a>. It was prepared to be used with the toolset of <strong>polmineR</strong>.</p>
-<p>See the GermaParl documentation on <a href="https://github.com/PolMine/GermaParl">GitHub</a> for further information. A preliminary documentation can be found in the vignette of this package.</p>
+<p>See the GermaParl documentation on <a href="https://github.com/PolMine/GermaParl">GitHub</a> for further information. A preliminary documentation can be found in the vignette of this package.# Workflow</p>
+</div>
+</div>
+<div id="towards-indexed-cwb-corpora" class="section level2">
+<h2 class="hasAnchor">
+<a href="#towards-indexed-cwb-corpora" class="anchor"></a>Towards indexed CWB-Corpora</h2>
+<p>MigParl is a consolidated, thematically subset subcorpus of a collection of plenary protocols of the German regional states. As such, the documentation of indexiation of the entire regional state corpora is at the location of this data, which is currently not available for public.</p>
+</div>
+<div id="from-cwb-to-subset" class="section level2">
+<h2 class="hasAnchor">
+<a href="#from-cwb-to-subset" class="anchor"></a>From CWB to subset</h2>
+<div id="topic-modelling" class="section level3">
+<h3 class="hasAnchor">
+<a href="#topic-modelling" class="anchor"></a>Topic Modelling</h3>
+<p>On the 16 individual collections of the German regional states a topic modelling was performed.</p>
+<p>After that, topic relevance was estimated based on a dictionary.</p>
+</div>
+<div id="subsetting" class="section level3">
+<h3 class="hasAnchor">
+<a href="#subsetting" class="anchor"></a>Subsetting</h3>
+<p>In order to extract only relevant speeches from the initial corpora, we add two structural attributes to the corpus: speech and migration_integration_probability (which contains the sum of the probability of a speech containing to any of the relevant topics). We then get the speeches which sum probability is greater than a predefined threshold. After extracting the tokenstream and the metadata per regional state, the raw data is stored on disk for later reencoding.</p>
+</div>
+<div id="dicitonary-approach" class="section level3">
+<h3 class="hasAnchor">
+<a href="#dicitonary-approach" class="anchor"></a>Dicitonary Approach</h3>
+<p>In addition to the topic modelling approach, we use a dictionary approach derived from the creation process of the MigPress corpus of newspaper articles to determine relevancy.</p>
+</div>
+<div id="reencoding" class="section level3">
+<h3 class="hasAnchor">
+<a href="#reencoding" class="anchor"></a>Reencoding</h3>
+<p>Previously extracted tokenstreams and metadata are encoded again as a new corpus, MigParl.</p>
+</div>
+<div id="version-history-of-the-package" class="section level3">
+<h3 class="hasAnchor">
+<a href="#version-history-of-the-package" class="anchor"></a>Version history of the package</h3>
+<p>[1.0.1-RC]</p>
+<ul>
+<li>added additional dictionary based sampling as a foundation for speech selection</li>
+</ul>
+<p>[1.0.0-RC]</p>
+<ul>
+<li>prepared for release before the November 2019 Workshop of the MigTex project</li>
+</ul>
+<p>[0.1.0]</p>
+<ul>
+<li>major update based on new initial corpora versions</li>
+<li>changed sampling strategy to probability based sampling</li>
+<li>removed workshop tutorials for general dissemination</li>
+</ul>
+<p>[0.0.1.9001] Some provisional functions to update tutorials and to find topics added.</p>
+<p>[0.0.1.9000] Updated tutorial references for Workshop.</p>
+<p>[0.0.1] First Beta for MMD Workshop.</p>
+</div>
+</div>
 </div>
 
   </div>
@@ -101,7 +186,7 @@
 <div class="license">
 <h2>License</h2>
 <ul class="list-unstyled">
-<li>NONE</li>
+<li><a href="https://creativecommons.org/licenses/by-sa/4.0">CC BY-SA 4.0</a></li>
 </ul>
 </div>
 <div class="developers">
@@ -112,7 +197,13 @@
 </ul>
 </div>
 
-  </div>
+  <div class="dev-status">
+<h2>Dev status</h2>
+<ul class="list-unstyled">
+<li><a href="https://travis-ci.org/PolMine/MigParl"><img src="https://api.travis-ci.org/PolMine/MigParl.svg?branch=master" alt="Travis-CI Build Status"></a></li>
+</ul>
+</div>
+</div>
 </div>
 
 
