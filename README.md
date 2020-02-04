@@ -1,6 +1,7 @@
-[![Travis-CI Build
-Status](https://api.travis-ci.org/PolMine/MigParl.svg?branch=master)](https://travis-ci.org/PolMine/MigParl)
-
+[![License: CC BY-SA 4.0](https://img.shields.io/badge/License-CC%20BY--SA%204.0-lightgrey.svg)](https://creativecommons.org/licenses/by-sa/4.0/)
+[![Travis-CI Build Status](https://api.travis-ci.org/PolMine/MigParl.svg?branch=master)](https://travis-ci.org/PolMine/MigParl)
+[![AppVeyor Build Status](https://ci.appveyor.com/api/projects/status/github/PolMine/MigParl?branch=master&svg=true)](https://ci.appveyor.com/project/PolMine/MigParl)
+[![codecov](https://codecov.io/gh/PolMine/MigParl/branch/master/graph/badge.svg)](https://codecov.io/gh/PolMine/MigParl/branch/master)
 
 # MigParl
 
